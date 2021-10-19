@@ -116,7 +116,7 @@
 		left: 0;
 		width: 100%;
 		height: 100%;
-		background: rgba(70, 63, 180, 0.3) url('../static/loading.gif') center / 200px no-repeat;
+		background: rgba(70, 63, 180, 0.3) url('../loading.gif') center / 200px no-repeat;
 	}
 
 	form {
