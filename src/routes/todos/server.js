@@ -34,8 +34,8 @@ export async function post(req) {
 		port: 587,
 		secure: false,
 		auth: {
-			user: 'austin.parker60@ethereal.email',
-      		pass: 'MkaKc1C15GzjY2TK5T'
+			user: process.env.MAIL,
+      		pass: process.env.PASSWORD
 		}
 	});
 
@@ -43,7 +43,7 @@ export async function post(req) {
 
 	try {
 		info = await transporter.sendMail({
-			from: 'austin.parker60@ethereal.email',
+			from: process.env.MAIL,
 			to: sanitizeHtml(req.body.FMail),
 			subject: 'Hello ✔',
 			text: sanitizeHtml(req.body.FMessage),
