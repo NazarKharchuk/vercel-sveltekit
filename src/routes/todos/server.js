@@ -1,0 +1,76 @@
+/*
+	This module is used by the /todos.json and /todos/[uid].json
+	endpoints to make calls to api.svelte.dev, which stores todos
+	for each user. The leading underscore indicates that this is
+	a private module, _not_ an endpoint — visiting /todos/_api
+	will net you a 404 response.
+
+	(The data on the todo app will expire periodically; no
+	guarantees are made. Don't use it to organise your life.)
+*/
+
+import nodemailer from 'nodemailer';
+import rateLimit from 'lambda-rate-limiter';
+const limiter = rateLimit({
+	interval: 60000
+});
+import sanitizeHtml from 'sanitize-html';
+
+function ValidGmail(input) {
+	return !/^\w+([-]?\w+)*@\w+([-]?\w+)*(\.\w{2,8})+$/.test(input);
+}
+
+export async function post(req) {
+	/*console.log('Email: ' + req.body.FMail);
+	console.log('Message: ' + sanitizeHtml(req.body.FMessage));*/
+
+	let ip = req.headers['x-forwarded-for'];
+
+	try {
+		await limiter.check(3, ip);
+	} catch (error) {
+		return { status: '429', body: { code: 429, message: 'Error: Too many requests.' } };
+	}
+
+	if (req.body.FMessage == '' || req.body.FMail == '') {
+		return { status: '500', body: { code: 500, message: 'Error: Fields must be not empty.' } };
+	}
+
+	if (ValidGmail(req.body.FMail)) {
+		return { status: '500', body: { code: 500, message: 'Error: Invalid mail.' } };
+	}
+
+	const transporter = nodemailer.createTransport({
+		host: 'smtp.ethereal.email',
+		port: 587,
+		secure: false,
+		auth: {
+			user: 'austin.parker60@ethereal.email',
+      		pass: 'MkaKc1C15GzjY2TK5T'
+		}
+	});
+
+	let info;
+
+	try {
+		info = await transporter.sendMail({
+			from: 'austin.parker60@ethereal.email',
+			to: sanitizeHtml(req.body.FMail),
+			subject: 'Hello ✔',
+			text: sanitizeHtml(req.body.FMessage),
+			html: sanitizeHtml(req.body.FMessage)
+		});
+	} catch (error) {
+		return {
+			status: '500',
+			body: { code: 500, message: 'Error: Connecting to mailer failed', json: info }
+		};
+	}
+
+	/*console.log('Message sent: %s', info.messageId);
+
+	console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));*/
+
+	return { status: '200', body: { code: 200, message: 'Success: Mail sent!', json: info } };
+}
+
